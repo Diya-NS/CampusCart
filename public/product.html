@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details - CampusCart</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .product-detail-container {
+            padding-top: calc(var(--header-height) + 2rem);
+            padding-bottom: 4rem;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin-top: 2rem;
+            background: var(--bg-surface);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+        }
+
+        .product-image-container {
+            background: var(--bg-light);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+        }
+
+        .product-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .product-info h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .product-price {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .seller-info {
+            background: rgba(79, 70, 229, 0.05);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(79, 70, 229, 0.1);
+        }
+
+        .seller-info h3 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .description {
+            margin-bottom: 2rem;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .product-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 3H5.2L7.6 14.9C7.8 16 8.7 16.8 9.8 16.8H18.4C19.5 16.8 20.4 16 20.6 14.9L22 7.7H6.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 21C9.55228 21 10 20.5523 10 20C10 19.4477 9.55228 19 9 19C8.44772 19 8 19.4477 8 20C8 20.5523 8.44772 21 9 21Z" fill="currentColor"/>
+                    <path d="M19 21C19.5523 21 20 20.5523 20 20C20 19.4477 19.5523 19 19 19C18.4477 19 18 19.4477 18 20C18 20.5523 18.4477 21 19 21Z" fill="currentColor"/>
+                </svg>
+                CampusCart
+            </a>
+            
+            <nav class="nav-links" id="navLinks">
+                <a href="index.html">Home</a>
+                <a href="marketplace.html">Marketplace</a>
+                <a href="login.html" class="btn btn-outline" id="navLoginBtn">Login</a>
+                <a href="register.html" class="btn btn-primary" id="navSignupBtn">Sign Up</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container product-detail-container">
+        <a href="marketplace.html" style="color: var(--primary); font-weight: 500;">&larr; Back to Marketplace</a>
+        
+        <div class="product-grid" id="productContainer">
+            <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);">
+                Loading product details...
+            </div>
+        </div>
+    </div>
+
+    <!-- Offer Modal -->
+    <div id="offerModal" class="modal" style="display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+        <div class="modal-content" style="background-color: var(--bg-surface); padding: 2rem; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: var(--shadow-lg);">
+            <span class="close" id="closeOfferModal" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+            <h2 style="margin-bottom: 1.5rem; color: var(--primary);">Make an Offer</h2>
+            
+            <form id="offerForm">
+                <input type="hidden" id="offerProductId">
+                <div class="form-group">
+                    <label for="offerPrice">Your Offered Price (₹)</label>
+                    <input type="number" id="offerPrice" class="form-control" required min="1" step="0.01">
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Submit Offer</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthStatus();
+            loadProductDetails();
+        });
+
+        function checkAuthStatus() {
+            const token = localStorage.getItem('campuscart_token');
+            const userStr = localStorage.getItem('campuscart_user');
+            
+            if (token && userStr) {
+                const navLinks = document.getElementById('navLinks');
+                navLinks.innerHTML = `
+                    <a href="index.html">Home</a>
+                    <a href="marketplace.html">Marketplace</a>
+                    <a href="dashboard.html" style="font-weight: 600; color: var(--primary);">Dashboard</a>
+                    <a href="#" class="btn btn-outline" id="logoutBtn">Logout</a>
+                `;
+                
+                document.getElementById('logoutBtn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('campuscart_token');
+                    localStorage.removeItem('campuscart_user');
+                    window.location.reload();
+                });
+            }
+        }
+
+        async function loadProductDetails() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('id');
+            const container = document.getElementById('productContainer');
+            
+            if (!productId) {
+                container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--accent);">Product not found.</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/products/${productId}`);
+                const product = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(product.message || 'Failed to load product');
+                }
+                
+                const imageUrl = product.image ? `/uploads/${product.image}` : '';
+                const imageHtml = imageUrl 
+                    ? `<img src="${imageUrl}" alt="${product.product_name}">`
+                    : `<span>No Image Available</span>`;
+                
+                let actionHtml = '';
+                const userStr = localStorage.getItem('campuscart_user');
+                
+                if (userStr) {
+                    const user = JSON.parse(userStr);
+                    if (user.id == product.seller_id) {
+                        actionHtml = `<div class="btn btn-outline" style="pointer-events: none; opacity: 0.5;">This is your listing</div>`;
+                    } else if (product.status === 'available') {
+                        actionHtml = `<button class="btn btn-primary btn-large" onclick="makeOffer(${product.product_id})" style="padding: 1rem 2rem; font-size: 1.1rem; width: 100%;">Make Offer / Contact Seller</button>`;
+                    } else {
+                        actionHtml = `<div class="btn btn-outline" style="pointer-events: none; border-color: #ef4444; color: #ef4444;">Item is Sold</div>`;
+                    }
+                } else {
+                    actionHtml = `<a href="login.html" class="btn btn-primary" style="padding: 1rem 2rem; width: 100%; text-align: center;">Login to Contact Seller</a>`;
+                }
+                
+                container.innerHTML = `
+                    <div class="product-image-container">
+                        ${imageHtml}
+                    </div>
+                    
+                    <div class="product-info">
+                        <div style="color: var(--primary); font-weight: 600; text-transform: uppercase; font-size: 0.85rem; margin-bottom: 0.5rem; letter-spacing: 0.05em;">
+                            ${product.category || 'Uncategorized'}
+                        </div>
+                        <h1>${product.product_name}</h1>
+                        <div class="product-price">₹${parseFloat(product.price).toFixed(2)}</div>
+                        
+                        <div class="seller-info">
+                            <h3>Seller Details</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 1rem;">
+                                <p><strong>Name:</strong><br>${product.seller_name}</p>
+                                <p><strong>Phone:</strong><br>${product.seller_phone || 'N/A'}</p>
+                                <p><strong>Email:</strong><br>${product.seller_email || 'N/A'}</p>
+                                <p><strong>College:</strong><br>${product.college_name}</p>
+                                <p><strong>Department:</strong><br>${product.seller_department || 'N/A'}</p>
+                                <p><strong>Room No:</strong><br>${product.seller_room_no || 'N/A'}</p>
+                            </div>
+                            <p style="margin-top: 1rem;"><strong>Status:</strong> <span style="color: ${product.status === 'available' ? 'var(--secondary)' : 'var(--accent)'}; font-weight: 600; text-transform: capitalize;">${product.status}</span></p>
+                        </div>
+                        
+                        <h3>Description</h3>
+                        <div class="description">
+                            ${product.description ? product.description.replace(/\n/g, '<br>') : 'No description provided.'}
+                        </div>
+                        
+                        <div class="action-buttons">
+                            ${actionHtml}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error fetching product details:', error);
+                container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--accent);">Error loading product details. Please try again later.</div>';
+            }
+        }
+        
+        function makeOffer(productId) {
+            const modal = document.getElementById('offerModal');
+            document.getElementById('offerProductId').value = productId;
+            modal.style.display = 'flex';
+        }
+
+        document.getElementById('closeOfferModal').addEventListener('click', () => {
+            document.getElementById('offerModal').style.display = 'none';
+        });
+
+        document.getElementById('offerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const productId = document.getElementById('offerProductId').value;
+            const offeredPrice = document.getElementById('offerPrice').value;
+            const token = localStorage.getItem('campuscart_token');
+
+            try {
+                const response = await fetch('/api/offers', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ product_id: productId, offered_price: offeredPrice })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Offer submitted successfully! You can track it in your Dashboard.');
+                    document.getElementById('offerModal').style.display = 'none';
+                } else {
+                    alert(data.message || 'Failed to submit offer.');
+                }
+            } catch (error) {
+                console.error('Error submitting offer:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+    </script>
+</body>
+</html>

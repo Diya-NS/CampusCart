@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - CampusCart</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 2rem;
+            min-height: calc(100vh - var(--header-height));
+            padding-top: calc(var(--header-height) + 2rem);
+        }
+
+        .sidebar {
+            background: var(--bg-surface);
+            padding: 2rem;
+            border-right: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar h3 {
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .sidebar p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            color: var(--text-main);
+            font-weight: 500;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary);
+        }
+
+        .content-area {
+            background: var(--bg-surface);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+        
+        .product-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-light);
+        }
+        
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-available { background: #d1fae5; color: #065f46; }
+        .badge-sold { background: #fee2e2; color: #991b1b; }
+        .badge-pending { background: #fef3c7; color: #92400e; }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: var(--bg-surface);
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 3H5.2L7.6 14.9C7.8 16 8.7 16.8 9.8 16.8H18.4C19.5 16.8 20.4 16 20.6 14.9L22 7.7H6.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 21C9.55228 21 10 20.5523 10 20C10 19.4477 9.55228 19 9 19C8.44772 19 8 19.4477 8 20C8 20.5523 8.44772 21 9 21Z" fill="currentColor"/>
+                    <path d="M19 21C19.5523 21 20 20.5523 20 20C20 19.4477 19.5523 19 19 19C18.4477 19 18 19.4477 18 20C18 20.5523 18.4477 21 19 21Z" fill="currentColor"/>
+                </svg>
+                CampusCart
+            </a>
+            
+            <nav class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="marketplace.html">Marketplace</a>
+                <a href="dashboard.html" class="active" style="font-weight: 600; color: var(--primary);">Dashboard</a>
+                <a href="#" class="btn btn-outline" id="logoutBtn">Logout</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container dashboard-container">
+        <aside class="sidebar">
+            <h3 id="userName">User Name</h3>
+            <p id="userRole">Role: Loading...</p>
+            
+            <div class="nav-menu">
+                <div class="nav-item active" data-target="my-listings" id="navListings">My Listings</div>
+                <div class="nav-item" data-target="my-offers" id="navOffers">My Offers</div>
+                <div class="nav-item" data-target="my-orders" id="navOrders">My Orders</div>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <!-- Listings Tab -->
+            <div id="my-listings" class="tab-content active">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2>My Listings</h2>
+                    <button class="btn btn-primary" id="addListingBtn" style="display: none;">Add New Product</button>
+                </div>
+                <div class="product-list" id="listingsContainer">
+                    <p style="color: var(--text-muted);">Loading listings...</p>
+                </div>
+            </div>
+
+            <!-- Offers Tab -->
+            <div id="my-offers" class="tab-content">
+                <h2>Offers</h2>
+                <div class="product-list" id="offersContainer">
+                    <p style="color: var(--text-muted);">Loading offers...</p>
+                </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div id="my-orders" class="tab-content">
+                <h2>My Orders</h2>
+                <div class="product-list" id="ordersContainer">
+                    <p style="color: var(--text-muted);">Loading orders...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div id="addProductModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <h2 style="margin-bottom: 1.5rem; color: var(--primary);">Add New Product</h2>
+            
+            <form id="addProductForm">
+                <div class="form-group">
+                    <label for="productName">Product Name</label>
+                    <input type="text" id="productName" class="form-control" required placeholder="Calculous Textbook">
+                </div>
+                
+                <div class="form-group">
+                    <label for="productDescription">Description</label>
+                    <textarea id="productDescription" class="form-control" rows="3" required placeholder="Condition, edition, etc."></textarea>
+                </div>
+                
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label for="productCategory">Category</label>
+                        <select id="productCategory" class="form-control" required>
+                            <option value="Textbooks">Textbooks</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Stationery">Stationery</option>
+                            <option value="Hostel">Hostel Essentials</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="productPrice">Price (₹)</label>
+                        <input type="number" id="productPrice" class="form-control" required min="1" step="0.01">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="productImage">Image URL (Optional for MVP)</label>
+                    <input type="text" id="productImage" class="form-control" placeholder="https://example.com/image.jpg">
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Post Product</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Offers Modal -->
+    <div id="viewOffersModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close" id="closeOffersModal">&times;</span>
+            <h2 id="offersModalTitle" style="margin-bottom: 1.5rem; color: var(--primary);">Offers</h2>
+            <div class="product-list" id="offersListContainer">
+                <p style="color: var(--text-muted);">Loading offers...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let token = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            token = localStorage.getItem('campuscart_token');
+            const userStr = localStorage.getItem('campuscart_user');
+            
+            if (!token || !userStr) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            currentUser = JSON.parse(userStr);
+            
+            // Setup UI based on user role
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userRole').textContent = `Role: ${currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)}`;
+            
+            if (currentUser.role === 'seller') {
+                document.getElementById('addListingBtn').style.display = 'block';
+            } else if (currentUser.role === 'buyer') {
+                // Hide seller specific elements
+                document.getElementById('addListingBtn').style.display = 'none';
+                document.querySelector('[data-target="my-listings"]').style.display = 'none';
+                
+                // Show offers tab as default for buyers
+                document.querySelector('.nav-item').classList.remove('active');
+                document.getElementById('navOffers').classList.add('active');
+                
+                document.querySelector('.tab-content.active').classList.remove('active');
+                document.getElementById('my-offers').classList.add('active');
+            }
+            
+            setupTabs();
+            setupModal();
+            setupLogout();
+            
+            // Initial data load
+            loadData();
+        });
+
+        function setupTabs() {
+            const navItems = document.querySelectorAll('.nav-item');
+            
+            navItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    // Remove active class from all tabs
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    item.classList.add('active');
+                    const targetId = item.getAttribute('data-target');
+                    document.getElementById(targetId).classList.add('active');
+                    
+                    // Load corresponding data
+                    loadData();
+                });
+            });
+        }
+
+        function setupModal() {
+            const modal = document.getElementById('addProductModal');
+            const btn = document.getElementById('addListingBtn');
+            const span = document.getElementById('closeModal');
+            const form = document.getElementById('addProductForm');
+
+            if (btn) {
+                btn.onclick = function() { modal.style.display = "flex"; }
+            }
+            
+            span.onclick = function() { modal.style.display = "none"; }
+            
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+            
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const productData = {
+                    product_name: document.getElementById('productName').value,
+                    description: document.getElementById('productDescription').value,
+                    category: document.getElementById('productCategory').value,
+                    price: document.getElementById('productPrice').value,
+                    image: document.getElementById('productImage').value || null // Use URL or null
+                };
+                
+                try {
+                    const response = await fetch('/api/products', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(productData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        alert('Product created successfully!');
+                        modal.style.display = "none";
+                        form.reset();
+                        loadMyListings(); // Reload listings
+                    } else {
+                        alert(data.message || 'Failed to create product.');
+                    }
+                } catch (error) {
+                    console.error('Error creating product:', error);
+                    alert('An error occurred.');
+                }
+            });
+        }
+        
+        function setupLogout() {
+            document.getElementById('logoutBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('campuscart_token');
+                localStorage.removeItem('campuscart_user');
+                window.location.href = 'index.html';
+            });
+        }
+
+        function loadData() {
+            const activeTab = document.querySelector('.nav-item.active').getAttribute('data-target');
+            
+            if (activeTab === 'my-listings' && currentUser.role === 'seller') {
+                loadMyListings();
+            } else if (activeTab === 'my-offers') {
+                loadMyOffers();
+            } else if (activeTab === 'my-orders') {
+                loadMyOrders();
+            }
+        }
+
+        async function loadMyListings() {
+            const container = document.getElementById('listingsContainer');
+            
+            try {
+                // Fix: Custom endpoint needed for specifically "my products" or just filtering the main
+                const response = await fetch(`/api/products?seller_id=${currentUser.id}`);
+                const products = await response.json();
+                
+                container.innerHTML = '';
+                
+                if (!Array.isArray(products) || products.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-muted);">You have no listings yet.</p>';
+                    return;
+                }
+                
+                // Server might not support ?seller_id out of the box so manual filter if array returned
+                const myProducts = products.filter(p => p.seller_id == currentUser.id);
+                
+                if (myProducts.length === 0) {
+                     container.innerHTML = '<p style="color: var(--text-muted);">You have no listings yet.</p>';
+                     return;
+                }
+                
+                myProducts.forEach(product => {
+                    const item = document.createElement('div');
+                    item.className = 'product-item';
+                    
+                    let badgeClass = 'badge-available';
+                    if(product.status === 'sold') badgeClass = 'badge-sold';
+                    
+                    item.innerHTML = `
+                        <div>
+                            <h4 style="margin-bottom: 0.25rem;">${product.product_name}</h4>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">₹${product.price} • ${product.category}</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="badge ${badgeClass}">${product.status}</span>
+                            <a href="product.html?id=${product.product_id}" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">View</a>
+                            <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" onclick="viewProductOffers(${product.product_id}, '${product.product_name.replace(/'/g, "\\'")}')">View Offers</button>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Error fetching listings:', error);
+                container.innerHTML = '<p style="color: var(--accent);">Failed to load listings.</p>';
+            }
+        }
+        
+        async function loadMyOffers() {
+             const container = document.getElementById('offersContainer');
+             container.innerHTML = '<p style="color: var(--text-muted);">Loading offers...</p>';
+             
+             try {
+                const response = await fetch('/api/offers/my-offers', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const offers = await response.json();
+                
+                container.innerHTML = '';
+                
+                if (!Array.isArray(offers) || offers.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-muted);">You have not made any offers yet.</p>';
+                    return;
+                }
+                
+                offers.forEach(offer => {
+                    const item = document.createElement('div');
+                    item.className = 'product-item';
+                    
+                    let badgeClass = 'badge-pending';
+                    if(offer.status === 'accepted') badgeClass = 'badge-available'; // green
+                    if(offer.status === 'rejected') badgeClass = 'badge-sold';    // red
+                    
+                    item.innerHTML = `
+                        <div>
+                            <h4 style="margin-bottom: 0.25rem;">${offer.product_name}</h4>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">Original Price: ₹${offer.original_price} • Your Offer: <strong style="color: var(--text-main);">₹${offer.offered_price}</strong></div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">Placed on: ${new Date(offer.created_at).toLocaleDateString()}</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="badge ${badgeClass}">${offer.status}</span>
+                            ${offer.status === 'accepted' ? `<a href="checkout.html?offer_id=${offer.offer_id}&product_id=${offer.product_id}&price=${offer.offered_price}&name=${encodeURIComponent(offer.product_name)}" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; text-decoration: none;">Checkout</a>` : ''}
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+             } catch (error) {
+                 console.error('Error fetching my offers:', error);
+                 container.innerHTML = '<p style="color: var(--accent);">Failed to load offers.</p>';
+             }
+        }
+        
+        // Removed checkout function as we use direct link
+
+        async function viewProductOffers(productId, productName) {
+            const modal = document.getElementById('viewOffersModal');
+            document.getElementById('offersModalTitle').textContent = `Offers for ${productName}`;
+            const container = document.getElementById('offersListContainer');
+            container.innerHTML = '<p style="color: var(--text-muted);">Loading offers...</p>';
+            
+            modal.style.display = "flex";
+            
+            try {
+                const response = await fetch(`/api/offers/product/${productId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const offers = await response.json();
+                
+                container.innerHTML = '';
+                
+                if (!Array.isArray(offers) || offers.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-muted);">No offers received yet.</p>';
+                    return;
+                }
+                
+                offers.forEach(offer => {
+                    const item = document.createElement('div');
+                    item.className = 'product-item';
+                    
+                    let statusHtml = '';
+                    if (offer.status === 'pending') {
+                        statusHtml = `
+                            <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; border-color: #10b981; color: #10b981;" onclick="updateOfferStatus(${offer.offer_id}, 'accepted')">Accept</button>
+                            <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;" onclick="updateOfferStatus(${offer.offer_id}, 'rejected')">Reject</button>
+                        `;
+                    } else {
+                        let badgeClass = offer.status === 'accepted' ? 'badge-available' : 'badge-sold';
+                        statusHtml = `<span class="badge ${badgeClass}">${offer.status}</span>`;
+                    }
+                    
+                    item.innerHTML = `
+                        <div>
+                            <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-main);">Offer: ₹${offer.offered_price}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">By: ${offer.buyer_name}</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;" id="offer-actions-${offer.offer_id}">
+                            ${statusHtml}
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (error) {
+                 console.error('Error fetching product offers:', error);
+                 container.innerHTML = '<p style="color: var(--accent);">Failed to load offers.</p>';
+            }
+        }
+        
+        document.getElementById('closeOffersModal').addEventListener('click', () => {
+            document.getElementById('viewOffersModal').style.display = 'none';
+        });
+
+        async function updateOfferStatus(offerId, status) {
+            try {
+                const response = await fetch(`/api/offers/${offerId}/status`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status })
+                });
+                
+                if (response.ok) {
+                    alert(`Offer ${status} successfully!`);
+                    // Update UI optimistically
+                    const actionsContainer = document.getElementById(`offer-actions-${offerId}`);
+                    let badgeClass = status === 'accepted' ? 'badge-available' : 'badge-sold';
+                    actionsContainer.innerHTML = `<span class="badge ${badgeClass}">${status}</span>`;
+                } else {
+                    const data = await response.json();
+                    alert(data.message || 'Error updating offer.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred.');
+            }
+        }
+        
+        async function loadMyOrders() {
+             const container = document.getElementById('ordersContainer');
+             container.innerHTML = '<p style="color: var(--text-muted);">Loading orders...</p>';
+             
+             try {
+                const response = await fetch('/api/orders', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const orders = await response.json();
+                
+                container.innerHTML = '';
+                
+                if (!Array.isArray(orders) || orders.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-muted);">No orders found.</p>';
+                    return;
+                }
+                
+                orders.forEach(order => {
+                    const item = document.createElement('div');
+                    item.className = 'product-item';
+                    item.style.alignItems = 'flex-start';
+                    
+                    let badgeClass = 'badge-pending';
+                    if(order.payment_status === 'verified') badgeClass = 'badge-available'; // green
+                    if(order.payment_status === 'rejected') badgeClass = 'badge-sold';    // red
+                    
+                    let proofHtml = '';
+                    if (order.payment_proof) {
+                        proofHtml = `<div style="margin-top: 1rem;"><a href="/uploads/${order.payment_proof}" target="_blank" style="color: var(--primary); font-size: 0.85rem; text-decoration: underline;">View Payment Proof</a></div>`;
+                    }
+                    
+                    let roleSpecificHtml = '';
+                    if (currentUser.role === 'buyer') {
+                        roleSpecificHtml = `<div><small style="color: var(--text-muted);">Seller: ${order.seller_name}</small></div>`;
+                    } else if (currentUser.role === 'seller' || currentUser.role === 'admin') {
+                        roleSpecificHtml = `<div><small style="color: var(--text-muted);">Buyer: ${order.buyer_name}</small></div>`;
+                    }
+                    
+                    let actionsHtml = '';
+                    if ((currentUser.role === 'seller' || currentUser.role === 'admin') && order.payment_status === 'pending') {
+                        actionsHtml = `
+                            <div style="margin-top: 1rem; display: flex; gap: 0.5rem;" id="order-actions-${order.order_id}">
+                                <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; border-color: #10b981; color: #10b981;" onclick="verifyPayment(${order.order_id}, 'verified')">Verify</button>
+                                <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;" onclick="verifyPayment(${order.order_id}, 'rejected')">Reject</button>
+                            </div>
+                        `;
+                    }
+
+                    item.innerHTML = `
+                        <div style="flex-grow: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                                <div>
+                                    <h4 style="margin-bottom: 0.25rem;">${order.product_name}</h4>
+                                    <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-main);">Total: ₹${parseFloat(order.final_price).toFixed(2)}</div>
+                                </div>
+                                <span class="badge ${badgeClass}" id="order-status-badge-${order.order_id}">${order.payment_status}</span>
+                            </div>
+                            
+                            ${roleSpecificHtml}
+                            ${order.delivery_instructions ? `<div style="margin-top: 0.5rem; background: var(--bg-surface); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border);"><small style="color: var(--text-main); font-weight: 600;">Delivery Instructions:</small><br><small style="color: var(--text-muted);">${order.delivery_instructions}</small></div>` : ''}
+                            <div style="margin-top: 0.5rem;"><small style="color: var(--text-muted);">Order Date: ${new Date(order.order_date).toLocaleString()}</small></div>
+                            
+                            ${proofHtml}
+                            ${actionsHtml}
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+             } catch (error) {
+                 console.error('Error fetching orders:', error);
+                 container.innerHTML = '<p style="color: var(--accent);">Failed to load orders.</p>';
+             }
+        }
+
+        async function verifyPayment(orderId, status) {
+            try {
+                const response = await fetch(`/api/orders/${orderId}/verify`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status })
+                });
+                
+                if (response.ok) {
+                    alert(`Payment ${status} successfully!`);
+                    // Update UI optimistically
+                    const actionsContainer = document.getElementById(`order-actions-${orderId}`);
+                    if(actionsContainer) actionsContainer.remove();
+                    
+                    const badge = document.getElementById(`order-status-badge-${orderId}`);
+                    if(badge) {
+                        badge.textContent = status;
+                        badge.className = `badge ${status === 'verified' ? 'badge-available' : 'badge-sold'}`;
+                    }
+                } else {
+                    const data = await response.json();
+                    alert(data.message || 'Error updating payment status.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred.');
+            }
+        }
+    </script>
+</body>
+</html>

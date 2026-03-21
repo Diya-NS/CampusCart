@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - CampusCart</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <div class="auth-wrapper">
+        <div class="glass-card">
+            <h2 style="text-align: center; margin-bottom: 2rem; color: var(--primary);">Create an Account</h2>
+            
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" class="form-control" required placeholder="John Doe">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">College Email</label>
+                    <input type="email" id="email" class="form-control" required placeholder="john@college.edu">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-control" required placeholder="••••••••">
+                </div>
+                
+                <div class="form-group">
+                    <label for="college">Select College</label>
+                    <select id="college" class="form-control" required>
+                        <option value="" disabled selected>Loading colleges...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="role">I am a</label>
+                    <select id="role" class="form-control" required>
+                        <option value="buyer">Buyer (Looking to buy items)</option>
+                        <option value="seller">Seller (Looking to sell items)</option>
+                    </select>
+                </div>
+
+                <div class="form-group seller-only-fields" style="display: none; margin-top: 1rem;">
+                    <label for="phone">Phone Number (Required for Sellers)</label>
+                    <input type="text" id="phone" class="form-control" placeholder="10-digit mobile number">
+                </div>
+
+                <div class="form-group seller-only-fields" style="display: none;">
+                    <label for="upi_id">UPI ID (Required for Sellers)</label>
+                    <input type="text" id="upi_id" class="form-control" placeholder="example@upi">
+                </div>
+                
+                <div class="form-group" style="margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 10px; padding: 0.75rem;">Sign Up</button>
+                </div>
+            </form>
+            
+            <p class="form-text">Already have an account? <a href="login.html">Login here</a></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Fetch colleges for the dropdown
+                const response = await fetch('/api/colleges');
+                const colleges = await response.json();
+                
+                const collegeSelect = document.getElementById('college');
+                collegeSelect.innerHTML = '<option value="" disabled selected>Select your College</option>';
+                
+                colleges.forEach(college => {
+                    const option = document.createElement('option');
+                    option.value = college.college_id;
+                    option.textContent = `${college.college_name} - ${college.district}`;
+                    collegeSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error fetching colleges:', error);
+                const collegeSelect = document.getElementById('college');
+                collegeSelect.innerHTML = '<option value="" disabled selected>Error loading colleges</option>';
+            }
+        });
+
+        // Toggle extra fields based on role
+        document.getElementById('role').addEventListener('change', (e) => {
+            const sellerFields = document.querySelectorAll('.seller-only-fields');
+            if (e.target.value === 'seller') {
+                sellerFields.forEach(el => el.style.display = 'block');
+                document.getElementById('phone').required = true;
+                document.getElementById('upi_id').required = true;
+            } else {
+                sellerFields.forEach(el => el.style.display = 'none');
+                document.getElementById('phone').required = false;
+                document.getElementById('upi_id').required = false;
+            }
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const college_id = document.getElementById('college').value;
+            const role = document.getElementById('role').value;
+            const phone = document.getElementById('phone')?.value || null;
+            const upi_id = document.getElementById('upi_id')?.value || null;
+            
+            // For now hardcode these as they were missing from original form for sellers too
+            const designation = 'student';
+            const department = 'General';
+            const room_no = 'N/A';
+            
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, college_id, role, designation, department, room_no, phone, upi_id })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Registration successful! Please login.');
+                    window.location.href = 'login.html';
+                } else {
+                    alert(data.message || 'Registration failed.');
+                }
+            } catch (error) {
+                console.error('Registration Error:', error);
+                alert('An error occurred during registration.');
+            }
+        });
+    </script>
+</body>
+</html>

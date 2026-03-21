@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketplace - CampusCart</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .marketplace-header {
+            padding-top: calc(var(--header-height) + 2rem);
+            padding-bottom: 2rem;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-select {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-light);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            padding: 3rem 0;
+        }
+
+        .product-card {
+            background: var(--bg-surface);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background-color: var(--bg-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+
+        .product-content {
+            padding: 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-category {
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .product-price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 1rem;
+        }
+
+        .product-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .product-actions .btn {
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 3H5.2L7.6 14.9C7.8 16 8.7 16.8 9.8 16.8H18.4C19.5 16.8 20.4 16 20.6 14.9L22 7.7H6.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 21C9.55228 21 10 20.5523 10 20C10 19.4477 9.55228 19 9 19C8.44772 19 8 19.4477 8 20C8 20.5523 8.44772 21 9 21Z" fill="currentColor"/>
+                    <path d="M19 21C19.5523 21 20 20.5523 20 20C20 19.4477 19.5523 19 19 19C18.4477 19 18 19.4477 18 20C18 20.5523 18.4477 21 19 21Z" fill="currentColor"/>
+                </svg>
+                CampusCart
+            </a>
+            
+            <nav class="nav-links" id="navLinks">
+                <a href="index.html">Home</a>
+                <a href="marketplace.html" class="active">Marketplace</a>
+                <a href="login.html" class="btn btn-outline" id="navLoginBtn">Login</a>
+                <a href="register.html" class="btn btn-primary" id="navSignupBtn">Sign Up</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="marketplace-header">
+        <div class="container">
+            <h1>Marketplace</h1>
+            <p style="color: var(--text-muted);">Find textbooks, electronics, and supplies from students in your college.</p>
+            
+            <div class="filters">
+                <select class="filter-select" id="collegeFilter">
+                    <option value="">All Colleges</option>
+                </select>
+                <select class="filter-select" id="categoryFilter">
+                    <option value="">All Categories</option>
+                    <option value="Textbooks">Textbooks</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Stationery">Stationery</option>
+                    <option value="Hostel">Hostel Essentials</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="products-grid" id="productsGrid">
+            <!-- Loading indicator -->
+            <p style="text-align: center; grid-column: 1 / -1; color: var(--text-muted); padding: 3rem 0;">Loading products...</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthStatus();
+            loadColleges();
+            loadProducts();
+
+            document.getElementById('collegeFilter').addEventListener('change', loadProducts);
+            document.getElementById('categoryFilter').addEventListener('change', loadProducts);
+        });
+
+        function checkAuthStatus() {
+            const token = localStorage.getItem('campuscart_token');
+            const userStr = localStorage.getItem('campuscart_user');
+            
+            if (token && userStr) {
+                const user = JSON.parse(userStr);
+                const navLinks = document.getElementById('navLinks');
+                
+                // Keep Home and Marketplace, add Dashboard, replace Login/Signup with Profile/Logout
+                navLinks.innerHTML = `
+                    <a href="index.html">Home</a>
+                    <a href="marketplace.html" class="active">Marketplace</a>
+                    <a href="dashboard.html" style="font-weight: 600; color: var(--primary);">Dashboard</a>
+                    <a href="#" class="btn btn-outline" id="logoutBtn">Logout</a>
+                `;
+                
+                document.getElementById('logoutBtn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('campuscart_token');
+                    localStorage.removeItem('campuscart_user');
+                    window.location.reload();
+                });
+            }
+        }
+
+        async function loadColleges() {
+            try {
+                const response = await fetch('/api/colleges');
+                const colleges = await response.json();
+                
+                const collegeFilter = document.getElementById('collegeFilter');
+                
+                colleges.forEach(college => {
+                    const option = document.createElement('option');
+                    option.value = college.college_id;
+                    option.textContent = college.college_name;
+                    collegeFilter.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error fetching colleges:', error);
+            }
+        }
+
+        async function loadProducts() {
+            const grid = document.getElementById('productsGrid');
+            const collegeId = document.getElementById('collegeFilter').value;
+            const category = document.getElementById('categoryFilter').value;
+            
+            try {
+                let url = '/api/products?status=available';
+                if (collegeId) url += `&college_id=${collegeId}`;
+                if (category) url += `&category=${category}`;
+                
+                const response = await fetch(url);
+                const products = await response.json();
+                
+                grid.innerHTML = '';
+                
+                if (products.length === 0) {
+                    grid.innerHTML = '<p style="text-align: center; grid-column: 1 / -1; color: var(--text-muted); padding: 3rem 0;">No products found matching your criteria.</p>';
+                    return;
+                }
+                
+                products.forEach(product => {
+                    const imageUrl = product.image ? `/uploads/${product.image}` : '';
+                    const imageHtml = imageUrl 
+                        ? `<img src="${imageUrl}" alt="${product.product_name}" class="product-image">`
+                        : `<div class="product-image">No Image</div>`;
+
+                    const card = document.createElement('div');
+                    card.className = 'product-card';
+                    card.innerHTML = `
+                        ${imageHtml}
+                        <div class="product-content">
+                            <div class="product-category">${product.category || 'Uncategorized'}</div>
+                            <h3 class="product-title">${product.product_name}</h3>
+                            <div class="product-price">₹${parseFloat(product.price).toFixed(2)}</div>
+                            <div class="product-meta">
+                                <div><small>College: ${product.college_name || 'All'}</small></div>
+                                <div><small>Seller: ${product.seller_name}</small></div>
+                            </div>
+                            <div class="product-actions">
+                                <a href="product.html?id=${product.product_id}" class="btn btn-primary" style="width: 100%;">View Details</a>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error fetching products:', error);
+                grid.innerHTML = '<p style="text-align: center; grid-column: 1 / -1; color: var(--accent); padding: 3rem 0;">Error loading products. Please try again later.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
